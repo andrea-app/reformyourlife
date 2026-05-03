@@ -128,10 +128,14 @@
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
       border-radius: var(--r);
+      cursor: grab;
     }
+    .grid-wrap:active { cursor: grabbing; }
     .grid {
-      min-width: 700px;
+      min-width: 720px;
       border-radius: 0;
+      display: grid;
+      grid-template-columns: 54px repeat(7,minmax(90px,1fr));
     }
     @media (max-width: 640px) {
       .stats { grid-template-columns: repeat(2,1fr); }
@@ -348,12 +352,20 @@ document.addEventListener('keydown', e=>{ if(e.key==='Enter') doAuth(); });
 
 /* ── HELPERS ─────────────────────────────────── */
 function wkStart(off){
-  const d=new Date(); d.setHours(0,0,0,0);
+  const d=new Date(); d.setHours(12,0,0,0); // mezzogiorno evita bug UTC
   const day=d.getDay();
   d.setDate(d.getDate()-(day===0?6:day-1)+off*7);
+  d.setHours(12,0,0,0);
   return d;
 }
-function sid(date,t){ return date.toISOString().split('T')[0]+'_'+t.replace(':',''); }
+function localDateStr(date){
+  // Usa data locale invece di ISO (che è UTC e shifta in Italia)
+  const y=date.getFullYear();
+  const m=String(date.getMonth()+1).padStart(2,'0');
+  const d=String(date.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+d;
+}
+function sid(date,t){ return localDateStr(date)+'_'+t.replace(':',''); }
 function tEnd(t){ const [h,m]=t.split(':').map(Number); const tot=h*60+m+50; const eh=Math.floor(tot/60),em=tot%60; return (eh<10?'0':'')+eh+':'+(em===0?'00':String(em).padStart(2,'0')); }
 function fmtD(d){ return DF[d.getDay()]+' '+d.getDate()+' '+MN[d.getMonth()]+' '+d.getFullYear(); }
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
@@ -532,6 +544,17 @@ async function doAction(){
 }
 
 function closeModal(){ document.getElementById('overlay').style.display='none'; selSlot=null; }
+
+/* ── DRAG SCROLL su grid-wrap ────────────────── */
+(function(){
+  const el = document.querySelector('.grid-wrap') || document.getElementById('grid-wrap');
+  if(!el) return;
+  let isDown=false, startX, scrollLeft;
+  el.addEventListener('mousedown', e=>{ isDown=true; el.classList.add('active'); startX=e.pageX-el.offsetLeft; scrollLeft=el.scrollLeft; });
+  el.addEventListener('mouseleave', ()=>{ isDown=false; });
+  el.addEventListener('mouseup', ()=>{ isDown=false; });
+  el.addEventListener('mousemove', e=>{ if(!isDown) return; e.preventDefault(); const x=e.pageX-el.offsetLeft; el.scrollLeft=scrollLeft-(x-startX); });
+})();
 </script>
 </body>
 </html>
