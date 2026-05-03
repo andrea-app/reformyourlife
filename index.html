@@ -204,6 +204,10 @@
       <div class="matt-t">Partecipanti</div>
       <div class="matt-list" id="m-att"></div>
     </div>
+    <div id="m-name-sec" style="display:none;margin-top:12px">
+      <div class="matt-t" style="margin-bottom:6px">Nome partecipante</div>
+      <input type="text" id="m-name-inp" placeholder="Es. Mario Rossi" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;outline:none;background:var(--surface);color:var(--text)"/>
+    </div>
     <div class="mactions">
       <button id="m-btn" onclick="doAction()"></button>
       <button class="mbtn-close" onclick="closeModal()">Chiudi</button>
@@ -413,7 +417,7 @@ async function renderWeek(){
           const k=sid(d,t);
           const entry=data[k]||{attendees:[]};
           const att=entry.attendees||[];
-          const isMine=att.includes(user.uid);
+          const isMine=att.some(a=>a.uid===user.uid);
           const isFull=att.length>=MAX;
           tot++; if(isFull) full++; else free+=(MAX-att.length); if(isMine) mine++;
           const pill=document.createElement('div');
@@ -434,10 +438,11 @@ async function renderWeek(){
 }
 
 /* ── MODAL ───────────────────────────────────── */
+// attendees = array di oggetti {uid, nome}
 function openModal(date,t,k,entry){
   selSlot={k, entry: JSON.parse(JSON.stringify(entry))};
   const att=(entry.attendees||[]);
-  const isMine=att.includes(user.uid);
+  const isMine=att.some(a=>a.uid===user.uid);
   const isFull=att.length>=MAX;
 
   document.getElementById('m-date').textContent  = fmtD(date);
@@ -448,13 +453,25 @@ function openModal(date,t,k,entry){
   bar.style.width=Math.round(att.length/MAX*100)+'%';
   bar.style.background=isFull?'#D85A30':isMine?'#534AB7':'#1D9E75';
 
+  // Lista partecipanti con nomi reali
   const attSec=document.getElementById('m-att-sec');
   if(att.length){
     attSec.style.display='block';
-    document.getElementById('m-att').innerHTML=att.map(uid=>
-      `<div class="matt-item">${uid===user.uid?'✓ '+(user.displayName||'Tu'):'👤 Partecipante'}</div>`
+    document.getElementById('m-att').innerHTML=att.map(a=>
+      `<div class="matt-item">${a.uid===user.uid?'✓ ':''} ${a.nome||'–'}</div>`
     ).join('');
   } else { attSec.style.display='none'; }
+
+  // Campo nome: visibile solo se si sta prenotando
+  const nameSec=document.getElementById('m-name-sec');
+  const nameInp=document.getElementById('m-name-inp');
+  if(!isMine && !isFull){
+    nameSec.style.display='block';
+    nameInp.value='';
+    setTimeout(()=>nameInp.focus(),100);
+  } else {
+    nameSec.style.display='none';
+  }
 
   const btn=document.getElementById('m-btn');
   btn.className = isMine?'mbtn-cancel':isFull?'mbtn-full':'mbtn-book';
@@ -467,17 +484,22 @@ async function doAction(){
   if(!selSlot||!user) return;
   const {k, entry}=selSlot;
   const att=(entry.attendees||[]);
-  const isMine=att.includes(user.uid);
+  const isMine=att.some(a=>a.uid===user.uid);
   const isFull=att.length>=MAX;
   if(isFull&&!isMine) return;
   const ref=fdb.collection('slots').doc(k);
   try {
     if(isMine){
-      await ref.set({attendees:firebase.firestore.FieldValue.arrayRemove(user.uid)},{merge:true});
+      // Rimuove l'oggetto con questo uid
+      const nuovi=att.filter(a=>a.uid!==user.uid);
+      await ref.set({attendees:nuovi},{merge:true});
       toast('Prenotazione annullata');
     } else {
-      await ref.set({attendees:firebase.firestore.FieldValue.arrayUnion(user.uid)},{merge:true});
-      toast('✓ Prenotazione confermata!');
+      const nome=document.getElementById('m-name-inp').value.trim();
+      if(!nome){ toast('Inserisci il nome del partecipante'); return; }
+      const nuovi=[...att, {uid:user.uid, nome}];
+      await ref.set({attendees:nuovi},{merge:true});
+      toast('✓ Prenotazione confermata per '+nome+'!');
     }
     closeModal();
     renderWeek();
