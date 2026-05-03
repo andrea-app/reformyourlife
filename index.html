@@ -123,11 +123,22 @@
     .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1a1a1a; color: #fff; padding: 10px 20px; border-radius: 8px; font-size: 13px; z-index: 300; opacity: 0; transition: opacity .25s; pointer-events: none; }
     .toast.show { opacity: 1; }
 
+    /* MOBILE SCROLL */
+    .grid-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border-radius: var(--r);
+    }
+    .grid {
+      min-width: 700px;
+      border-radius: 0;
+    }
     @media (max-width: 640px) {
       .stats { grid-template-columns: repeat(2,1fr); }
-      .grid  { grid-template-columns: 40px repeat(7,1fr); }
-      .dnum  { font-size: 12px; }
-      .pill  { font-size: 9px; }
+      .dnum  { font-size: 13px; }
+      .pill  { font-size: 10px; padding: 3px 4px; }
+      .tcol  { font-size: 10px; padding: 5px 2px 0 4px; }
+      #app-screen { padding: 12px 10px; }
     }
   </style>
 </head>
@@ -182,7 +193,7 @@
     <button class="btn" onclick="changeWeek(1)">Succ →</button>
   </div>
   <div class="hol-banner" id="hol-banner"></div>
-  <div class="grid" id="grid"></div>
+  <div class="grid-wrap"><div class="grid" id="grid"></div></div>
   <div class="legend">
     <div class="leg"><div class="leg-dot" style="background:#E1F5EE;border:1px solid #5DCAA5"></div>Disponibile</div>
     <div class="leg"><div class="leg-dot" style="background:#EEEDFE;border:1px solid #AFA9EC"></div>Prenotata da me</div>
