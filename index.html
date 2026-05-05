@@ -5,30 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Pilates – Prenotazioni</title>
 
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --bg:       #f5f5f3;
-      --surface:  #ffffff;
-      --border:   #e0ddd8;
-      --text:     #1a1a1a;
-      --muted:    #6b6b6b;
-      --purple:   #534AB7;
-      --purplelt: #EEEDFE;
-      --green:    #1D9E75;
-      --greenlt:  #E1F5EE;
-      --red:      #D85A30;
-      --redlt:    #FAECE7;
-      --holbg:    #FCEBEB;
-      --holtext:  #A32D2D;
-      --r:        10px;
+      --bg: #f5f5f3; --surface: #ffffff; --border: #e0ddd8;
+      --text: #1a1a1a; --muted: #6b6b6b;
+      --purple: #534AB7; --purplelt: #EEEDFE;
+      --green: #1D9E75; --greenlt: #E1F5EE;
+      --red: #D85A30; --redlt: #FAECE7;
+      --holbg: #FCEBEB; --holtext: #A32D2D;
+      --r: 10px;
     }
-
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
     /* TOPBAR */
@@ -42,7 +29,7 @@
     #screen-login { display: flex; align-items: center; justify-content: center; min-height: calc(100vh - 52px); padding: 20px; }
     .login-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 32px; width: 100%; max-width: 360px; }
     .login-box h2 { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
-    .login-box p  { font-size: 13px; color: var(--muted); margin-bottom: 22px; }
+    .login-box p { font-size: 13px; color: var(--muted); margin-bottom: 22px; }
     .field { margin-bottom: 14px; }
     .field label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: .4px; }
     .field input { width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 7px; font-size: 14px; outline: none; transition: border-color .15s; background: var(--surface); color: var(--text); }
@@ -57,10 +44,31 @@
     #screen-app { display: none; padding: 20px 16px; max-width: 1100px; margin: 0 auto; }
 
     /* STATS */
-    .stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 18px; }
+    .stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 14px; }
     .stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 12px 14px; }
     .stat-n { font-size: 22px; font-weight: 600; }
     .stat-l { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* TOOLBAR */
+    .toolbar { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
+    .search-wrap { flex: 1; min-width: 180px; position: relative; }
+    .search-wrap input { width: 100%; padding: 8px 12px 8px 34px; border: 1px solid var(--border); border-radius: 7px; font-size: 13px; outline: none; background: var(--surface); color: var(--text); transition: border-color .15s; }
+    .search-wrap input:focus { border-color: var(--purple); }
+    .search-ico { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 14px; pointer-events: none; }
+    .btn-export { padding: 8px 14px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface); font-size: 13px; cursor: pointer; white-space: nowrap; }
+    .btn-export:hover { background: var(--bg); }
+    .btn-export.csv { border-color: var(--green); color: var(--green); }
+    .btn-export.pdf { border-color: var(--purple); color: var(--purple); }
+
+    /* SEARCH RESULTS */
+    .search-results { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 14px; margin-bottom: 14px; display: none; }
+    .search-results h4 { font-size: 13px; font-weight: 600; margin-bottom: 10px; }
+    .sr-item { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px; gap: 8px; }
+    .sr-item:last-child { border-bottom: none; }
+    .sr-name { color: var(--purple); font-weight: 500; }
+    .sr-time { font-weight: 500; }
+    .sr-date { color: var(--muted); font-size: 12px; }
+    .sr-empty { font-size: 13px; color: var(--muted); text-align: center; padding: 10px 0; }
 
     /* CAL HEADER */
     .cal-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
@@ -70,25 +78,26 @@
     .hol-banner { background: var(--holbg); border: 1px solid #F7C1C1; border-radius: 8px; padding: 8px 14px; font-size: 12px; color: var(--holtext); margin-bottom: 12px; display: none; }
 
     /* GRID */
-    .grid { display: grid; grid-template-columns: 54px repeat(7,1fr); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; background: var(--surface); }
+    .grid-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: var(--r); }
+    .grid { min-width: 720px; display: grid; grid-template-columns: 54px repeat(7, minmax(90px,1fr)); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; background: var(--surface); }
     .ghdr { background: #f9f9f7; padding: 8px 4px; text-align: center; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); }
     .ghdr:last-child { border-right: none; }
-    .ghdr.today  { background: var(--purplelt); }
-    .ghdr.hol    { background: var(--holbg); }
+    .ghdr.today { background: var(--purplelt); }
+    .ghdr.hol { background: var(--holbg); }
     .dname { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
-    .dnum  { font-size: 15px; font-weight: 600; margin-top: 2px; }
+    .dnum { font-size: 15px; font-weight: 600; margin-top: 2px; }
     .dnum.t { background: var(--purple); color: #fff; border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; margin: 2px auto 0; font-size: 13px; }
     .dnum.h { color: var(--holtext); }
     .hname { font-size: 8px; color: var(--holtext); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .tcol  { font-size: 10px; color: var(--muted); padding: 6px 4px 0 8px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); background: #f9f9f7; }
-    .cell  { border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); min-height: 52px; padding: 3px; }
+    .tcol { font-size: 10px; color: var(--muted); padding: 6px 4px 0 8px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); background: #f9f9f7; }
+    .cell { border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); min-height: 52px; padding: 3px; }
     .cell:last-child { border-right: none; }
     .cell.hol { background: #fff8f8; }
     .closed { display: flex; align-items: center; justify-content: center; height: 100%; min-height: 46px; font-size: 9px; color: #E24B4A; opacity: .4; }
     .pill { border-radius: 5px; padding: 4px 6px; font-size: 10px; cursor: pointer; margin-bottom: 2px; transition: opacity .15s; }
     .pill:hover { opacity: .8; }
     .pill.free { background: var(--greenlt); color: #085041; }
-    .pill.full { background: var(--redlt);   color: #712B13; }
+    .pill.full { background: var(--redlt); color: #712B13; }
     .pill.mine { background: var(--purplelt); color: #3C3489; }
     .pill-t { font-weight: 600; white-space: nowrap; }
     .pill-c { font-size: 9px; opacity: .75; }
@@ -110,66 +119,33 @@
     .mbar { height: 100%; border-radius: 3px; transition: width .3s; }
     .matt { margin-top: 10px; }
     .matt-t { font-size: 11px; color: var(--muted); font-weight: 600; margin-bottom: 4px; }
-    .matt-list { max-height: 90px; overflow-y: auto; }
-    .matt-item { font-size: 12px; color: var(--muted); padding: 3px 0; border-bottom: 1px solid var(--border); }
+    .matt-list { max-height: 110px; overflow-y: auto; }
+    .matt-item { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--muted); padding: 4px 0; border-bottom: 1px solid var(--border); }
+    .matt-item:last-child { border-bottom: none; }
+    .btn-remove { font-size: 11px; color: var(--red); background: none; border: none; cursor: pointer; padding: 2px 6px; }
+    .btn-remove:hover { text-decoration: underline; }
+    .name-sec { margin-top: 12px; }
+    .name-sec label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .4px; }
+    .name-sec input { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 7px; font-size: 13px; outline: none; background: var(--surface); color: var(--text); transition: border-color .15s; }
+    .name-sec input:focus { border-color: var(--purple); }
     .mactions { display: flex; gap: 8px; margin-top: 14px; }
     .mactions button { flex: 1; padding: 9px; border-radius: 7px; border: none; font-size: 13px; font-weight: 500; cursor: pointer; }
-    .mbtn-book   { background: var(--purple); color: #fff; }
-    .mbtn-cancel { background: #993C1D; color: #fff; }
-    .mbtn-full   { background: #888; color: #fff; cursor: default !important; }
-    .mbtn-close  { background: var(--bg) !important; color: var(--text) !important; border: 1px solid var(--border) !important; }
+    .mbtn-book { background: var(--purple); color: #fff; }
+    .mbtn-full { background: #888; color: #fff; cursor: default; }
+    .mbtn-close { background: var(--bg); color: var(--text); border: 1px solid var(--border) !important; }
 
     /* TOAST */
     .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1a1a1a; color: #fff; padding: 10px 20px; border-radius: 8px; font-size: 13px; z-index: 300; opacity: 0; transition: opacity .25s; pointer-events: none; }
     .toast.show { opacity: 1; }
 
-    /* SEARCH + EXPORT */
-    .toolbar { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
-    .search-wrap { flex: 1; min-width: 180px; position: relative; }
-    .search-wrap input { width: 100%; padding: 8px 12px 8px 34px; border: 1px solid var(--border); border-radius: 7px; font-size: 13px; outline: none; background: var(--surface); color: var(--text); transition: border-color .15s; }
-    .search-wrap input:focus { border-color: var(--purple); }
-    .search-wrap .ico { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 14px; pointer-events: none; }
-    .btn-export { padding: 8px 14px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 13px; cursor: pointer; white-space: nowrap; }
-    .btn-export:hover { background: var(--bg); }
-    .btn-export.csv { border-color: var(--green); color: var(--green); }
-    .btn-export.pdf { border-color: var(--purple); color: var(--purple); }
-
-    /* SEARCH RESULTS */
-    .search-results { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 14px; margin-bottom: 14px; display: none; }
-    .search-results h4 { font-size: 13px; font-weight: 600; margin-bottom: 10px; color: var(--text); }
-    .sr-item { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
-    .sr-item:last-child { border-bottom: none; }
-    .sr-date { color: var(--muted); font-size: 12px; }
-    .sr-time { font-weight: 500; }
-    .sr-name { color: var(--purple); }
-    .sr-empty { font-size: 13px; color: var(--muted); text-align: center; padding: 10px 0; }
-
-    /* MOBILE SCROLL */
-    .grid-wrap {
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      border-radius: var(--r);
-      cursor: grab;
-    }
-    .grid-wrap:active { cursor: grabbing; }
-    .grid {
-      min-width: 720px;
-      border-radius: 0;
-      display: grid;
-      grid-template-columns: 54px repeat(7,minmax(90px,1fr));
-    }
     @media (max-width: 640px) {
       .stats { grid-template-columns: repeat(2,1fr); }
-      .dnum  { font-size: 13px; }
-      .pill  { font-size: 10px; padding: 3px 4px; }
-      .tcol  { font-size: 10px; padding: 5px 2px 0 4px; }
-      #app-screen { padding: 12px 10px; }
+      #screen-app { padding: 12px 10px; }
     }
   </style>
 </head>
 <body>
 
-<!-- TOPBAR -->
 <div class="topbar">
   <div class="topbar-title">🧘 Pilates – Prenotazioni</div>
   <div class="topbar-right">
@@ -178,7 +154,6 @@
   </div>
 </div>
 
-<!-- LOGIN -->
 <div id="screen-login">
   <div class="login-box">
     <h2 id="auth-title">Accedi</h2>
@@ -199,44 +174,46 @@
     <div class="auth-err" id="auth-err"></div>
     <div class="auth-toggle">
       <span id="tog-txt">Non hai un account?</span>
-      <a onclick="toggleMode()"> <span id="tog-lnk">Registrati</span></a>
+      <a onclick="toggleMode()"><span id="tog-lnk">Registrati</span></a>
     </div>
   </div>
 </div>
 
-<!-- APP -->
 <div id="screen-app">
   <div class="stats">
-    <div class="stat"><div class="stat-n" id="s0">–</div><div class="stat-l">Lezioni settimana</div></div>
-    <div class="stat"><div class="stat-n" id="s1">–</div><div class="stat-l">Posti liberi</div></div>
-    <div class="stat"><div class="stat-n" id="s2">–</div><div class="stat-l">Al completo</div></div>
-    <div class="stat"><div class="stat-n" id="s3">–</div><div class="stat-l">Mie prenotazioni</div></div>
+    <div class="stat"><div class="stat-n" id="s0">-</div><div class="stat-l">Lezioni settimana</div></div>
+    <div class="stat"><div class="stat-n" id="s1">-</div><div class="stat-l">Posti liberi</div></div>
+    <div class="stat"><div class="stat-n" id="s2">-</div><div class="stat-l">Al completo</div></div>
+    <div class="stat"><div class="stat-n" id="s3">-</div><div class="stat-l">Mie prenotazioni</div></div>
   </div>
+
   <div class="toolbar">
     <div class="search-wrap">
-      <span class="ico">🔍</span>
-      <input type="text" id="search-inp" placeholder="Cerca iscritto…" oninput="doSearch()" autocomplete="off"/>
+      <span class="search-ico">🔍</span>
+      <input type="text" id="search-inp" placeholder="Cerca iscritto..." oninput="doSearch()" autocomplete="off"/>
     </div>
-    <button class="btn-export csv" onclick="exportCSV()">⬇ CSV</button>
-    <button class="btn-export pdf" onclick="exportPDF()">⬇ PDF</button>
+    <button class="btn-export csv" onclick="exportCSV()">CSV</button>
+    <button class="btn-export pdf" onclick="exportPDF()">PDF</button>
   </div>
   <div class="search-results" id="search-results"></div>
+
   <div class="cal-hdr">
-    <button class="btn" onclick="changeWeek(-1)">← Prec</button>
+    <button class="btn" onclick="changeWeek(-1)">Prec</button>
     <h2 id="week-lbl"></h2>
-    <button class="btn" onclick="changeWeek(1)">Succ →</button>
+    <button class="btn" onclick="changeWeek(1)">Succ</button>
   </div>
   <div class="hol-banner" id="hol-banner"></div>
-  <div class="grid-wrap"><div class="grid" id="grid"></div></div>
+  <div class="grid-wrap">
+    <div class="grid" id="grid"></div>
+  </div>
   <div class="legend">
     <div class="leg"><div class="leg-dot" style="background:#E1F5EE;border:1px solid #5DCAA5"></div>Disponibile</div>
     <div class="leg"><div class="leg-dot" style="background:#EEEDFE;border:1px solid #AFA9EC"></div>Prenotata da me</div>
     <div class="leg"><div class="leg-dot" style="background:#FAECE7;border:1px solid #F0997B"></div>Completa</div>
-    <div class="leg"><div class="leg-dot" style="background:#FCEBEB;border:1px solid #F7C1C1"></div>Festivo – chiuso</div>
+    <div class="leg"><div class="leg-dot" style="background:#FCEBEB;border:1px solid #F7C1C1"></div>Festivo</div>
   </div>
 </div>
 
-<!-- MODAL -->
 <div class="overlay" id="overlay" style="display:none" onclick="if(event.target===this)closeModal()">
   <div class="modal">
     <h3>Lezione Pilates</h3>
@@ -249,9 +226,9 @@
       <div class="matt-t">Partecipanti</div>
       <div class="matt-list" id="m-att"></div>
     </div>
-    <div id="m-name-sec" style="display:none;margin-top:12px">
-      <div class="matt-t" style="margin-bottom:6px">Nome partecipante</div>
-      <input type="text" id="m-name-inp" placeholder="Es. Mario Rossi" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;outline:none;background:var(--surface);color:var(--text)"/>
+    <div class="name-sec" id="m-name-sec" style="display:none">
+      <label>Nome partecipante</label>
+      <input type="text" id="m-name-inp" placeholder="Es. Mario Rossi"/>
     </div>
     <div class="mactions">
       <button id="m-btn" onclick="doAction()"></button>
@@ -262,451 +239,486 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script>
-/* ── FIREBASE CONFIG ─────────────────────────── */
 firebase.initializeApp({
-  apiKey:            "AIzaSyCKnHsm44cH5VD5z3b2ekOxs6NP2O4Vx2U",
-  authDomain:        "my-project-db-6c33d.firebaseapp.com",
-  projectId:         "my-project-db-6c33d",
-  storageBucket:     "my-project-db-6c33d.firebasestorage.app",
+  apiKey: "AIzaSyCKnHsm44cH5VD5z3b2ekOxs6NP2O4Vx2U",
+  authDomain: "my-project-db-6c33d.firebaseapp.com",
+  projectId: "my-project-db-6c33d",
+  storageBucket: "my-project-db-6c33d.firebasestorage.app",
   messagingSenderId: "1061012864323",
-  appId:             "1:1061012864323:web:1505dcf336c65f876443f6"
+  appId: "1:1061012864323:web:1505dcf336c65f876443f6"
 });
-const fdb  = firebase.firestore();
-const auth = firebase.auth();
+var fdb = firebase.firestore();
+var auth = firebase.auth();
 
-/* ── PALINSESTO ──────────────────────────────── */
-const MAX = 4;
-const SCHEDULE = [
+var MAX = 4;
+var SCHEDULE = [
   { day:1, times:['08:30','10:30','13:00','19:00','20:00'] },
   { day:2, times:['07:30','09:30','10:30','13:00','17:00','18:00','19:00'] },
   { day:3, times:['08:30','09:30','10:30','18:00','19:00'] },
   { day:4, times:['07:30','09:30','13:00','18:00','19:00'] },
   { day:5, times:['07:30','08:30','10:30','17:00','18:00'] },
-  { day:6, times:['09:30','10:30'] },
+  { day:6, times:['09:30','10:30'] }
 ];
-const ALL_TIMES = [...new Set(SCHEDULE.flatMap(s=>s.times))].sort();
 
-/* ── COSTANTI ────────────────────────────────── */
-const DS = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
-const DF = ['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
-const MN = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+var allTimes = [];
+(function(){
+  var t = {};
+  SCHEDULE.forEach(function(s){ s.times.forEach(function(x){ t[x]=1; }); });
+  allTimes = Object.keys(t).sort();
+})();
 
-/* ── FESTIVITÀ ───────────────────────────────── */
-const FISSE = {
+var DS = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
+var DF = ['Domenica','Lunedi','Martedi','Mercoledi','Giovedi','Venerdi','Sabato'];
+var MN = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+
+var FISSE = {
   '01-01':'Capodanno','01-06':'Epifania','04-25':'Liberazione',
   '05-01':'Lavoro','06-02':'Repubblica','08-15':'Ferragosto',
-  '11-01':'Ognissanti','12-08':'Immacolata','12-25':'Natale','12-26':'S. Stefano'
+  '11-01':'Ognissanti','12-08':'Immacolata','12-25':'Natale','12-26':'S.Stefano'
 };
-function easter(y){
-  const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4;
-  const f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30;
-  const i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451);
-  const mo=Math.floor((h+l-7*m+114)/31),da=((h+l-7*m+114)%31)+1;
-  return new Date(y,mo-1,da);
+
+function getEaster(y) {
+  var a=y%19, b=Math.floor(y/100), c=y%100, d=Math.floor(b/4), e=b%4;
+  var f=Math.floor((b+8)/25), g=Math.floor((b-f+1)/3), h=(19*a+b-d-g+15)%30;
+  var i=Math.floor(c/4), k=c%4, l=(32+2*e+2*i-h-k)%7;
+  var m=Math.floor((a+11*h+22*l)/451);
+  var mo=Math.floor((h+l-7*m+114)/31), da=((h+l-7*m+114)%31)+1;
+  return new Date(y, mo-1, da);
 }
-function holiday(d){
-  const mm=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');
-  if(FISSE[mm+'-'+dd]) return FISSE[mm+'-'+dd];
-  const e=easter(d.getFullYear()),em=new Date(e); em.setDate(e.getDate()+1);
-  if(d.toDateString()===e.toDateString())  return 'Pasqua';
-  if(d.toDateString()===em.toDateString()) return 'Pasquetta';
+
+function getHoliday(d) {
+  var mm = String(d.getMonth()+1).padStart(2,'0');
+  var dd = String(d.getDate()).padStart(2,'0');
+  if (FISSE[mm+'-'+dd]) return FISSE[mm+'-'+dd];
+  var e = getEaster(d.getFullYear());
+  var em = new Date(e); em.setDate(e.getDate()+1);
+  if (d.toDateString() === e.toDateString()) return 'Pasqua';
+  if (d.toDateString() === em.toDateString()) return 'Pasquetta';
   return null;
 }
 
-/* ── STATE ───────────────────────────────────── */
-let user      = null;
-let isRegMode = false;
-let weekOff   = 0;
-let selSlot   = null;
+var currentUser = null;
+var isRegMode = false;
+var weekOff = 0;
+var selSlot = null;
+var weekData = {};
+var weekDays = [];
 
-/* ── AUTH STATE ──────────────────────────────── */
-auth.onAuthStateChanged(u => {
-  user = u;
-  if(u){
+auth.onAuthStateChanged(function(u) {
+  currentUser = u;
+  if (u) {
     document.getElementById('screen-login').style.display = 'none';
-    document.getElementById('screen-app').style.display  = 'block';
-    document.getElementById('top-email').textContent     = u.displayName || u.email;
-    document.getElementById('btn-logout').style.display  = 'inline-block';
+    document.getElementById('screen-app').style.display = 'block';
+    document.getElementById('top-email').textContent = u.displayName || u.email;
+    document.getElementById('btn-logout').style.display = 'inline-block';
     renderWeek();
   } else {
     document.getElementById('screen-login').style.display = 'flex';
-    document.getElementById('screen-app').style.display   = 'none';
-    document.getElementById('top-email').textContent      = '';
-    document.getElementById('btn-logout').style.display   = 'none';
+    document.getElementById('screen-app').style.display = 'none';
+    document.getElementById('top-email').textContent = '';
+    document.getElementById('btn-logout').style.display = 'none';
   }
 });
 
-/* ── AUTH FUNCTIONS ──────────────────────────── */
-function toggleMode(){
+function toggleMode() {
   isRegMode = !isRegMode;
-  document.getElementById('auth-title').textContent   = isRegMode ? 'Registrati' : 'Accedi';
-  document.getElementById('auth-sub').textContent     = isRegMode ? 'Crea il tuo account.' : 'Inserisci le tue credenziali per gestire le prenotazioni.';
-  document.getElementById('tog-txt').textContent      = isRegMode ? 'Hai già un account?' : 'Non hai un account?';
-  document.getElementById('tog-lnk').textContent      = isRegMode ? 'Accedi' : 'Registrati';
+  document.getElementById('auth-title').textContent = isRegMode ? 'Registrati' : 'Accedi';
+  document.getElementById('auth-sub').textContent = isRegMode ? 'Crea il tuo account.' : 'Inserisci le tue credenziali.';
+  document.getElementById('tog-txt').textContent = isRegMode ? 'Hai gia un account?' : 'Non hai un account?';
+  document.getElementById('tog-lnk').textContent = isRegMode ? 'Accedi' : 'Registrati';
   document.getElementById('field-name').style.display = isRegMode ? 'block' : 'none';
-  document.getElementById('auth-err').textContent     = '';
+  document.getElementById('auth-err').textContent = '';
 }
 
-async function doAuth(){
-  const email = document.getElementById('inp-email').value.trim().toLowerCase();
-  const pass  = document.getElementById('inp-pass').value;
-  const name  = document.getElementById('inp-name').value.trim();
-  const err   = document.getElementById('auth-err');
+function doAuth() {
+  var email = document.getElementById('inp-email').value.trim().toLowerCase();
+  var pass = document.getElementById('inp-pass').value;
+  var name = document.getElementById('inp-name').value.trim();
+  var err = document.getElementById('auth-err');
   err.textContent = '';
-  if(!email||!pass){ err.textContent='Compila tutti i campi.'; return; }
-  try {
-    if(isRegMode){
-      if(!name){ err.textContent='Inserisci nome e cognome.'; return; }
-      const c = await auth.createUserWithEmailAndPassword(email, pass);
-      await c.user.updateProfile({ displayName: name });
-    } else {
-      await auth.signInWithEmailAndPassword(email, pass);
-    }
-  } catch(e){
-    const map = {
-      'auth/email-already-in-use':'Email già registrata.',
-      'auth/invalid-email':'Email non valida.',
-      'auth/weak-password':'Password troppo corta (min. 6 caratteri).',
-      'auth/user-not-found':'Utente non trovato.',
-      'auth/wrong-password':'Password errata.',
-      'auth/invalid-credential':'Credenziali non valide.',
-    };
-    err.textContent = map[e.code] || e.message;
+  if (!email || !pass) { err.textContent = 'Compila tutti i campi.'; return; }
+  if (isRegMode) {
+    if (!name) { err.textContent = 'Inserisci nome e cognome.'; return; }
+    auth.createUserWithEmailAndPassword(email, pass)
+      .then(function(c) { return c.user.updateProfile({ displayName: name }); })
+      .catch(function(e) { err.textContent = authErr(e.code) || e.message; });
+  } else {
+    auth.signInWithEmailAndPassword(email, pass)
+      .catch(function(e) { err.textContent = authErr(e.code) || e.message; });
   }
 }
 
-async function doLogout(){ await auth.signOut(); }
+function authErr(code) {
+  var m = {
+    'auth/email-already-in-use': 'Email gia registrata.',
+    'auth/invalid-email': 'Email non valida.',
+    'auth/weak-password': 'Password troppo corta (min. 6 caratteri).',
+    'auth/user-not-found': 'Utente non trovato.',
+    'auth/wrong-password': 'Password errata.',
+    'auth/invalid-credential': 'Credenziali non valide.'
+  };
+  return m[code];
+}
 
-document.addEventListener('keydown', e=>{ if(e.key==='Enter') doAuth(); });
+function doLogout() { auth.signOut(); }
 
-/* ── HELPERS ─────────────────────────────────── */
-function wkStart(off){
-  const d=new Date(); d.setHours(12,0,0,0); // mezzogiorno evita bug UTC
-  const day=d.getDay();
-  d.setDate(d.getDate()-(day===0?6:day-1)+off*7);
-  d.setHours(12,0,0,0);
+document.addEventListener('keydown', function(e) { if (e.key === 'Enter') doAuth(); });
+
+function wkStart(off) {
+  var d = new Date();
+  d.setHours(12, 0, 0, 0);
+  var day = d.getDay();
+  d.setDate(d.getDate() - (day === 0 ? 6 : day - 1) + off * 7);
   return d;
 }
-function localDateStr(date){
-  // Usa data locale invece di ISO (che è UTC e shifta in Italia)
-  const y=date.getFullYear();
-  const m=String(date.getMonth()+1).padStart(2,'0');
-  const d=String(date.getDate()).padStart(2,'0');
-  return y+'-'+m+'-'+d;
-}
-function sid(date,t){ return localDateStr(date)+'_'+t.replace(':',''); }
-function tEnd(t){ const [h,m]=t.split(':').map(Number); const tot=h*60+m+50; const eh=Math.floor(tot/60),em=tot%60; return (eh<10?'0':'')+eh+':'+(em===0?'00':String(em).padStart(2,'0')); }
-function fmtD(d){ return DF[d.getDay()]+' '+d.getDate()+' '+MN[d.getMonth()]+' '+d.getFullYear(); }
-function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
 
-/* ── RENDER ──────────────────────────────────── */
-function changeWeek(d){ weekOff+=d; renderWeek(); }
-
-async function renderWeek(){
-  if(!user) return;
-  const ws=wkStart(weekOff);
-  const we=new Date(ws); we.setDate(we.getDate()+6);
-  document.getElementById('week-lbl').textContent =
-    ws.getDate()+' '+MN[ws.getMonth()]+' – '+we.getDate()+' '+MN[we.getMonth()]+' '+we.getFullYear();
-
-  const today=new Date(); today.setHours(0,0,0,0);
-  const days=[]; for(let i=0;i<7;i++){const d=new Date(ws);d.setDate(d.getDate()+i);days.push(d);}
-
-  // Banner festività
-  const hols=days.map(d=>({d,n:holiday(d)})).filter(x=>x.n);
-  const banner=document.getElementById('hol-banner');
-  if(hols.length){
-    banner.style.display='block';
-    banner.textContent='🔴 Chiuso: '+hols.map(x=>x.n+' ('+x.d.getDate()+' '+MN[x.d.getMonth()]+')').join(' · ');
-  } else { banner.style.display='none'; }
-
-  // Slot IDs da caricare
-  const ids=[];
-  days.forEach(d=>{ if(!holiday(d)){ const s=SCHEDULE.find(s=>s.day===d.getDay()); if(s) s.times.forEach(t=>ids.push(sid(d,t))); } });
-
-  const snap = ids.length
-    ? await fdb.collection('slots').where(firebase.firestore.FieldPath.documentId(),'in',ids).get()
-    : {docs:[]};
-  const data={};
-  snap.docs.forEach(doc=>{ data[doc.id]=doc.data(); });
-  // Salva per export e ricerca
-  window._weekData = data;
-  window._weekDays = days;
-
-  const grid=document.getElementById('grid');
-  grid.innerHTML='';
-
-  // Corner
-  const corner=document.createElement('div');
-  corner.className='ghdr'; corner.style.background='#f9f9f7';
-  grid.appendChild(corner);
-
-  // Day headers
-  days.forEach(d=>{
-    const isToday=d.getTime()===today.getTime();
-    const h=holiday(d);
-    const el=document.createElement('div');
-    el.className='ghdr'+(isToday?' today':h?' hol':'');
-    el.innerHTML=`<div class="dname">${DS[d.getDay()]}</div>
-      <div class="dnum${isToday?' t':h?' h':''}">${d.getDate()}</div>
-      ${h?`<div class="hname">${h}</div>`:''}`;
-    grid.appendChild(el);
-  });
-
-  let tot=0,free=0,full=0,mine=0;
-
-  ALL_TIMES.forEach(t=>{
-    const tl=document.createElement('div'); tl.className='tcol'; tl.textContent=t;
-    grid.appendChild(tl);
-    days.forEach(d=>{
-      const cell=document.createElement('div');
-      const h=holiday(d);
-      const sch=SCHEDULE.find(s=>s.day===d.getDay());
-      const has=sch&&sch.times.includes(t);
-      if(h){
-        cell.className='cell hol';
-        if(has){ const x=document.createElement('div'); x.className='closed'; x.textContent='chiuso'; cell.appendChild(x); }
-      } else {
-        cell.className='cell';
-        if(has){
-          const k=sid(d,t);
-          const entry=data[k]||{attendees:[]};
-          const att=entry.attendees||[];
-          const isMine=att.some(a=>a&&a.uid===user.uid);
-          const isFull=att.length>=MAX;
-          tot++; if(isFull) full++; else free+=(MAX-att.length); if(isMine) mine++;
-          const pill=document.createElement('div');
-          pill.className='pill '+(isMine?'mine':isFull?'full':'free');
-          pill.innerHTML=`<div class="pill-t">${t}–${tEnd(t)}</div><div class="pill-c">${att.length}/${MAX}</div>`;
-          pill.onclick=()=>openModal(d,t,k,entry);
-          cell.appendChild(pill);
-        }
-      }
-      grid.appendChild(cell);
-    });
-  });
-
-  document.getElementById('s0').textContent=tot;
-  document.getElementById('s1').textContent=free;
-  document.getElementById('s2').textContent=full;
-  document.getElementById('s3').textContent=mine;
+function localStr(date) {
+  var y = date.getFullYear();
+  var m = String(date.getMonth()+1).padStart(2,'0');
+  var d = String(date.getDate()).padStart(2,'0');
+  return y + '-' + m + '-' + d;
 }
 
-/* ── MODAL ───────────────────────────────────── */
-// attendees = array di oggetti {uid, nome}
-function openModal(date,t,k,entry){
-  selSlot={k, entry: JSON.parse(JSON.stringify(entry)), date, t};
-  renderModal();
-  document.getElementById('overlay').style.display='flex';
+function sid(date, t) { return localStr(date) + '_' + t.replace(':', ''); }
+
+function tEnd(t) {
+  var parts = t.split(':');
+  var h = parseInt(parts[0]);
+  var m = parseInt(parts[1]);
+  var tot = h * 60 + m + 50;
+  var eh = Math.floor(tot / 60);
+  var em = tot % 60;
+  return (eh < 10 ? '0' : '') + eh + ':' + (em === 0 ? '00' : String(em).padStart(2,'0'));
 }
 
-function renderModal(){
-  const {entry, date, t} = selSlot;
-  const att=(entry.attendees||[]);
-  const isFull=att.length>=MAX;
+function fmtD(d) {
+  return DF[d.getDay()] + ' ' + d.getDate() + ' ' + MN[d.getMonth()] + ' ' + d.getFullYear();
+}
 
-  document.getElementById('m-date').textContent  = fmtD(date);
-  document.getElementById('m-time').textContent  = t+' – '+tEnd(t);
-  document.getElementById('m-spots').textContent = att.length+'/'+MAX;
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 2500);
+}
 
-  const bar=document.getElementById('m-bar');
-  bar.style.width=Math.round(att.length/MAX*100)+'%';
-  bar.style.background=isFull?'#D85A30':'#1D9E75';
+function changeWeek(d) { weekOff += d; renderWeek(); }
 
-  // Lista partecipanti con pulsante rimuovi
-  const attSec=document.getElementById('m-att-sec');
-  if(att.length){
-    attSec.style.display='block';
-    document.getElementById('m-att').innerHTML=att.map((a,i)=>
-      `<div class="matt-item" style="display:flex;justify-content:space-between;align-items:center">
-        <span>${a.nome||'–'}</span>
-        <button onclick="removeAttendee(${i})" style="font-size:11px;color:#D85A30;background:none;border:none;cursor:pointer;padding:2px 6px">✕ Rimuovi</button>
-      </div>`
-    ).join('');
-  } else { attSec.style.display='none'; }
+function renderWeek() {
+  if (!currentUser) return;
+  var ws = wkStart(weekOff);
+  var we = new Date(ws); we.setDate(we.getDate() + 6);
+  var lbl = ws.getDate() + ' ' + MN[ws.getMonth()] + ' - ' + we.getDate() + ' ' + MN[we.getMonth()] + ' ' + we.getFullYear();
+  document.getElementById('week-lbl').textContent = lbl;
 
-  // Campo nome: visibile finché ci sono posti
-  const nameSec=document.getElementById('m-name-sec');
-  const nameInp=document.getElementById('m-name-inp');
-  if(!isFull){
-    nameSec.style.display='block';
-    nameInp.value='';
-    setTimeout(()=>nameInp.focus(),100);
+  var today = new Date(); today.setHours(0,0,0,0);
+  var days = [];
+  for (var i = 0; i < 7; i++) {
+    var d = new Date(ws); d.setDate(d.getDate() + i);
+    days.push(d);
+  }
+  weekDays = days;
+
+  var hols = days.filter(function(d) { return getHoliday(d); });
+  var banner = document.getElementById('hol-banner');
+  if (hols.length) {
+    banner.style.display = 'block';
+    banner.textContent = 'Chiuso: ' + hols.map(function(d) {
+      return getHoliday(d) + ' (' + d.getDate() + ' ' + MN[d.getMonth()] + ')';
+    }).join(' - ');
   } else {
-    nameSec.style.display='none';
+    banner.style.display = 'none';
   }
 
-  const btn=document.getElementById('m-btn');
-  btn.className = isFull?'mbtn-full':'mbtn-book';
-  btn.textContent = isFull?'Completo':'Aggiungi prenotazione';
+  var ids = [];
+  days.forEach(function(d) {
+    if (getHoliday(d)) return;
+    var s = SCHEDULE.find(function(s) { return s.day === d.getDay(); });
+    if (s) s.times.forEach(function(t) { ids.push(sid(d, t)); });
+  });
+
+  var promise = ids.length
+    ? fdb.collection('slots').where(firebase.firestore.FieldPath.documentId(), 'in', ids).get()
+    : Promise.resolve({ docs: [] });
+
+  promise.then(function(snap) {
+    var data = {};
+    snap.docs.forEach(function(doc) { data[doc.id] = doc.data(); });
+    weekData = data;
+
+    var grid = document.getElementById('grid');
+    grid.innerHTML = '';
+
+    var corner = document.createElement('div');
+    corner.className = 'ghdr';
+    corner.style.background = '#f9f9f7';
+    grid.appendChild(corner);
+
+    days.forEach(function(d) {
+      var isToday = d.toDateString() === today.toDateString();
+      var h = getHoliday(d);
+      var hdr = document.createElement('div');
+      hdr.className = 'ghdr' + (isToday ? ' today' : h ? ' hol' : '');
+      hdr.innerHTML = '<div class="dname">' + DS[d.getDay()] + '</div>' +
+        '<div class="dnum' + (isToday ? ' t' : h ? ' h' : '') + '">' + d.getDate() + '</div>' +
+        (h ? '<div class="hname">' + h + '</div>' : '');
+      grid.appendChild(hdr);
+    });
+
+    var tot=0, free=0, full=0, mine=0;
+
+    allTimes.forEach(function(t) {
+      var tl = document.createElement('div');
+      tl.className = 'tcol';
+      tl.textContent = t;
+      grid.appendChild(tl);
+
+      days.forEach(function(d) {
+        var cell = document.createElement('div');
+        var h = getHoliday(d);
+        var sch = SCHEDULE.find(function(s) { return s.day === d.getDay(); });
+        var has = sch && sch.times.indexOf(t) >= 0;
+
+        if (h) {
+          cell.className = 'cell hol';
+          if (has) {
+            var x = document.createElement('div');
+            x.className = 'closed';
+            x.textContent = 'chiuso';
+            cell.appendChild(x);
+          }
+        } else {
+          cell.className = 'cell';
+          if (has) {
+            var k = sid(d, t);
+            var entry = data[k] || { attendees: [] };
+            var att = entry.attendees || [];
+            var isMine = att.some(function(a) { return a && a.uid === currentUser.uid; });
+            var isFull = att.length >= MAX;
+            tot++;
+            if (isFull) full++; else free += (MAX - att.length);
+            if (isMine) mine++;
+            (function(dd, tt, kk, ee) {
+              var pill = document.createElement('div');
+              pill.className = 'pill ' + (isMine ? 'mine' : isFull ? 'full' : 'free');
+              pill.innerHTML = '<div class="pill-t">' + tt + '-' + tEnd(tt) + '</div><div class="pill-c">' + att.length + '/' + MAX + '</div>';
+              pill.onclick = function() { openModal(dd, tt, kk, ee); };
+              cell.appendChild(pill);
+            })(d, t, k, entry);
+          }
+        }
+        grid.appendChild(cell);
+      });
+    });
+
+    document.getElementById('s0').textContent = tot;
+    document.getElementById('s1').textContent = free;
+    document.getElementById('s2').textContent = full;
+    document.getElementById('s3').textContent = mine;
+  });
 }
 
-async function removeAttendee(idx){
-  if(!selSlot||!user) return;
-  const {k, entry}=selSlot;
-  const att=(entry.attendees||[]);
-  att.splice(idx,1);
-  entry.attendees=att;
-  const ref=fdb.collection('slots').doc(k);
-  try {
-    await ref.set({attendees:att},{merge:true});
-    toast('Partecipante rimosso');
-    renderModal();
-    renderWeek();
-  } catch(e){ toast('Errore: '+e.message); }
+function openModal(date, t, k, entry) {
+  selSlot = { k: k, entry: JSON.parse(JSON.stringify(entry)), date: date, t: t };
+  renderModal();
+  document.getElementById('overlay').style.display = 'flex';
 }
 
-async function doAction(){
-  if(!selSlot||!user) return;
-  const {k, entry}=selSlot;
-  const att=(entry.attendees||[]);
-  const isFull=att.length>=MAX;
-  if(isFull) return;
-  const nome=document.getElementById('m-name-inp').value.trim();
-  if(!nome){ toast('Inserisci il nome del partecipante'); return; }
-  const nuovi=[...att, {uid:user.uid, nome}];
-  entry.attendees=nuovi;
-  const ref=fdb.collection('slots').doc(k);
-  try {
-    await ref.set({attendees:nuovi},{merge:true});
-    toast('✓ Prenotazione confermata per '+nome+'!');
-    renderModal();
-    renderWeek();
-  } catch(e){ toast('Errore: '+e.message); }
+function renderModal() {
+  var att = selSlot.entry.attendees || [];
+  var isFull = att.length >= MAX;
+
+  document.getElementById('m-date').textContent = fmtD(selSlot.date);
+  document.getElementById('m-time').textContent = selSlot.t + ' - ' + tEnd(selSlot.t);
+  document.getElementById('m-spots').textContent = att.length + '/' + MAX;
+
+  var bar = document.getElementById('m-bar');
+  bar.style.width = Math.round(att.length / MAX * 100) + '%';
+  bar.style.background = isFull ? '#D85A30' : '#1D9E75';
+
+  var attSec = document.getElementById('m-att-sec');
+  if (att.length) {
+    attSec.style.display = 'block';
+    document.getElementById('m-att').innerHTML = att.map(function(a, i) {
+      return '<div class="matt-item"><span>' + (a.nome || '-') + '</span>' +
+        '<button class="btn-remove" onclick="removeAttendee(' + i + ')">Rimuovi</button></div>';
+    }).join('');
+  } else {
+    attSec.style.display = 'none';
+  }
+
+  var nameSec = document.getElementById('m-name-sec');
+  var nameInp = document.getElementById('m-name-inp');
+  if (!isFull) {
+    nameSec.style.display = 'block';
+    nameInp.value = '';
+    setTimeout(function() { nameInp.focus(); }, 100);
+  } else {
+    nameSec.style.display = 'none';
+  }
+
+  var btn = document.getElementById('m-btn');
+  btn.className = isFull ? 'mbtn-full' : 'mbtn-book';
+  btn.textContent = isFull ? 'Completo' : 'Aggiungi prenotazione';
 }
 
-function closeModal(){ document.getElementById('overlay').style.display='none'; selSlot=null; }
+function removeAttendee(idx) {
+  var att = selSlot.entry.attendees || [];
+  att.splice(idx, 1);
+  selSlot.entry.attendees = att;
+  fdb.collection('slots').doc(selSlot.k).set({ attendees: att }, { merge: true })
+    .then(function() {
+      showToast('Partecipante rimosso');
+      renderModal();
+      renderWeek();
+    })
+    .catch(function(e) { showToast('Errore: ' + e.message); });
+}
 
-/* ── RICERCA ─────────────────────────────────── */
-function doSearch(){
-  const q = document.getElementById('search-inp').value.trim().toLowerCase();
-  const box = document.getElementById('search-results');
-  if(!q){ box.style.display='none'; return; }
+function doAction() {
+  var att = selSlot.entry.attendees || [];
+  if (att.length >= MAX) return;
+  var nome = document.getElementById('m-name-inp').value.trim();
+  if (!nome) { showToast('Inserisci il nome del partecipante'); return; }
+  var nuovi = att.concat([{ uid: currentUser.uid, nome: nome }]);
+  selSlot.entry.attendees = nuovi;
+  fdb.collection('slots').doc(selSlot.k).set({ attendees: nuovi }, { merge: true })
+    .then(function() {
+      showToast('Prenotazione confermata per ' + nome + '!');
+      renderModal();
+      renderWeek();
+    })
+    .catch(function(e) { showToast('Errore: ' + e.message); });
+}
 
-  const data  = window._weekData || {};
-  const days  = window._weekDays || [];
-  const results = [];
+function closeModal() {
+  document.getElementById('overlay').style.display = 'none';
+  selSlot = null;
+}
 
-  days.forEach(d=>{
-    if(holiday(d)) return;
-    const sch=SCHEDULE.find(s=>s.day===d.getDay());
-    if(!sch) return;
-    sch.times.forEach(t=>{
-      const k=sid(d,t);
-      const entry=data[k]||{attendees:[]};
-      const att=entry.attendees||[];
-      att.forEach(a=>{
-        if(a.nome && a.nome.toLowerCase().includes(q)){
-          results.push({date:d, t, nome:a.nome});
+function doSearch() {
+  var q = document.getElementById('search-inp').value.trim().toLowerCase();
+  var box = document.getElementById('search-results');
+  if (!q) { box.style.display = 'none'; return; }
+
+  var results = [];
+  weekDays.forEach(function(d) {
+    if (getHoliday(d)) return;
+    var sch = SCHEDULE.find(function(s) { return s.day === d.getDay(); });
+    if (!sch) return;
+    sch.times.forEach(function(t) {
+      var k = sid(d, t);
+      var entry = weekData[k] || { attendees: [] };
+      var att = entry.attendees || [];
+      att.forEach(function(a) {
+        if (a.nome && a.nome.toLowerCase().indexOf(q) >= 0) {
+          results.push({ date: d, t: t, nome: a.nome });
         }
       });
     });
   });
 
-  box.style.display='block';
-  if(!results.length){
-    box.innerHTML=`<h4>Risultati per "${q}"</h4><div class="sr-empty">Nessuna prenotazione trovata questa settimana.</div>`;
+  box.style.display = 'block';
+  if (!results.length) {
+    box.innerHTML = '<h4>Nessun risultato per "' + q + '" questa settimana.</h4>';
     return;
   }
-  box.innerHTML=`<h4>${results.length} prenotazion${results.length===1?'e':'i'} trovate per "${q}"</h4>`
-    + results.map(r=>
-      `<div class="sr-item">
-        <span class="sr-name">👤 ${r.nome}</span>
-        <span class="sr-time">${r.t}–${tEnd(r.t)}</span>
-        <span class="sr-date">${DS[r.date.getDay()]} ${r.date.getDate()} ${MN[r.date.getMonth()]}</span>
-      </div>`
-    ).join('');
+  var html = '<h4>' + results.length + ' prenotazion' + (results.length === 1 ? 'e' : 'i') + ' per "' + q + '"</h4>';
+  results.forEach(function(r) {
+    html += '<div class="sr-item">' +
+      '<span class="sr-name">' + r.nome + '</span>' +
+      '<span class="sr-time">' + r.t + '-' + tEnd(r.t) + '</span>' +
+      '<span class="sr-date">' + DS[r.date.getDay()] + ' ' + r.date.getDate() + ' ' + MN[r.date.getMonth()] + '</span>' +
+      '</div>';
+  });
+  box.innerHTML = html;
 }
 
-/* ── EXPORT CSV ──────────────────────────────── */
-function exportCSV(){
-  const data = window._weekData || {};
-  const days = window._weekDays || [];
-  const lbl  = document.getElementById('week-lbl').textContent;
-  let rows = [['Data','Giorno','Orario','Fine','Partecipante']];
-
-  days.forEach(d=>{
-    if(holiday(d)) return;
-    const sch=SCHEDULE.find(s=>s.day===d.getDay());
-    if(!sch) return;
-    sch.times.forEach(t=>{
-      const k=sid(d,t);
-      const att=(data[k]?.attendees||[]);
-      if(att.length===0){
-        rows.push([localDateStr(d), DS[d.getDay()], t, tEnd(t), '–']);
+function exportCSV() {
+  var lbl = document.getElementById('week-lbl').textContent;
+  var rows = [['Data','Giorno','Orario','Fine','Partecipante']];
+  weekDays.forEach(function(d) {
+    if (getHoliday(d)) return;
+    var sch = SCHEDULE.find(function(s) { return s.day === d.getDay(); });
+    if (!sch) return;
+    sch.times.forEach(function(t) {
+      var k = sid(d, t);
+      var att = (weekData[k] && weekData[k].attendees) ? weekData[k].attendees : [];
+      if (!att.length) {
+        rows.push([localStr(d), DS[d.getDay()], t, tEnd(t), '-']);
       } else {
-        att.forEach(a=>rows.push([localDateStr(d), DS[d.getDay()], t, tEnd(t), a.nome||'–']));
+        att.forEach(function(a) {
+          rows.push([localStr(d), DS[d.getDay()], t, tEnd(t), a.nome || '-']);
+        });
       }
     });
   });
-
-  const csv = rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('
-');
-  const blob = new Blob(['﻿'+csv], {type:'text/csv;charset=utf-8'});
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href=url; a.download='prenotazioni_'+lbl.replace(/\s/g,'_')+'.csv';
-  a.click(); URL.revokeObjectURL(url);
-  toast('CSV esportato!');
+  var csv = rows.map(function(r) {
+    return r.map(function(c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(',');
+  }).join('\n');
+  var blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'prenotazioni_' + lbl.replace(/ /g, '_') + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('CSV esportato!');
 }
 
-/* ── EXPORT PDF ──────────────────────────────── */
-function exportPDF(){
-  const data = window._weekData || {};
-  const days = window._weekDays || [];
-  const lbl  = document.getElementById('week-lbl').textContent;
-
-  let rows = '';
-  days.forEach(d=>{
-    if(holiday(d)) return;
-    const sch=SCHEDULE.find(s=>s.day===d.getDay());
-    if(!sch) return;
-    sch.times.forEach(t=>{
-      const k=sid(d,t);
-      const att=(data[k]?.attendees||[]);
-      const nomi = att.length ? att.map(a=>a.nome||'–').join(', ') : '–';
-      const bgColor = att.length>=MAX ? '#FAECE7' : att.length>0 ? '#EEEDFE' : '#E1F5EE';
-      rows += `<tr style="background:${bgColor}">
-        <td>${DS[d.getDay()]} ${d.getDate()} ${MN[d.getMonth()]}</td>
-        <td>${t} – ${tEnd(t)}</td>
-        <td>${att.length}/${MAX}</td>
-        <td>${nomi}</td>
-      </tr>`;
+function exportPDF() {
+  var lbl = document.getElementById('week-lbl').textContent;
+  var rows = '';
+  weekDays.forEach(function(d) {
+    if (getHoliday(d)) return;
+    var sch = SCHEDULE.find(function(s) { return s.day === d.getDay(); });
+    if (!sch) return;
+    sch.times.forEach(function(t) {
+      var k = sid(d, t);
+      var att = (weekData[k] && weekData[k].attendees) ? weekData[k].attendees : [];
+      var nomi = att.length ? att.map(function(a) { return a.nome || '-'; }).join(', ') : '-';
+      var bg = att.length >= MAX ? '#FAECE7' : att.length > 0 ? '#EEEDFE' : '#E1F5EE';
+      rows += '<tr style="background:' + bg + '">' +
+        '<td>' + DS[d.getDay()] + ' ' + d.getDate() + ' ' + MN[d.getMonth()] + '</td>' +
+        '<td>' + t + ' - ' + tEnd(t) + '</td>' +
+        '<td style="text-align:center">' + att.length + '/' + MAX + '</td>' +
+        '<td>' + nomi + '</td></tr>';
     });
   });
-
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
-  <title>Prenotazioni ${lbl}</title>
-  <style>
-    body{font-family:sans-serif;padding:20px;color:#1a1a1a}
-    h2{margin-bottom:4px}p{color:#888;font-size:13px;margin-bottom:16px}
-    table{width:100%;border-collapse:collapse;font-size:13px}
-    th{background:#534AB7;color:#fff;padding:8px 10px;text-align:left}
-    td{padding:7px 10px;border-bottom:1px solid #eee}
-  </style></head><body>
-  <h2>🧘 Pilates – Prenotazioni</h2>
-  <p>${lbl}</p>
-  <table><thead><tr><th>Giorno</th><th>Orario</th><th>Posti</th><th>Partecipanti</th></tr></thead>
-  <tbody>${rows}</tbody></table>
-  </body></html>`;
-
-  const w = window.open('','_blank');
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Prenotazioni ' + lbl + '</title>' +
+    '<style>body{font-family:sans-serif;padding:20px;color:#1a1a1a}' +
+    'h2{margin-bottom:4px}p{color:#888;font-size:13px;margin-bottom:16px}' +
+    'table{width:100%;border-collapse:collapse;font-size:13px}' +
+    'th{background:#534AB7;color:#fff;padding:8px 10px;text-align:left}' +
+    'td{padding:7px 10px;border-bottom:1px solid #eee}</style></head><body>' +
+    '<h2>Pilates - Prenotazioni</h2><p>' + lbl + '</p>' +
+    '<table><thead><tr><th>Giorno</th><th>Orario</th><th>Posti</th><th>Partecipanti</th></tr></thead>' +
+    '<tbody>' + rows + '</tbody></table></body></html>';
+  var w = window.open('', '_blank');
   w.document.write(html);
   w.document.close();
-  setTimeout(()=>{ w.print(); }, 400);
-  toast('PDF pronto per la stampa!');
+  setTimeout(function() { w.print(); }, 400);
+  showToast('PDF pronto per la stampa!');
 }
 
-/* ── DRAG SCROLL su grid-wrap ────────────────── */
-(function(){
-  const el = document.querySelector('.grid-wrap') || document.getElementById('grid-wrap');
-  if(!el) return;
-  let isDown=false, startX, scrollLeft;
-  el.addEventListener('mousedown', e=>{ isDown=true; el.classList.add('active'); startX=e.pageX-el.offsetLeft; scrollLeft=el.scrollLeft; });
-  el.addEventListener('mouseleave', ()=>{ isDown=false; });
-  el.addEventListener('mouseup', ()=>{ isDown=false; });
-  el.addEventListener('mousemove', e=>{ if(!isDown) return; e.preventDefault(); const x=e.pageX-el.offsetLeft; el.scrollLeft=scrollLeft-(x-startX); });
+/* drag scroll */
+(function() {
+  var el = document.querySelector('.grid-wrap');
+  if (!el) return;
+  var isDown = false, startX, scrollLeft;
+  el.addEventListener('mousedown', function(e) { isDown = true; startX = e.pageX - el.offsetLeft; scrollLeft = el.scrollLeft; });
+  el.addEventListener('mouseleave', function() { isDown = false; });
+  el.addEventListener('mouseup', function() { isDown = false; });
+  el.addEventListener('mousemove', function(e) {
+    if (!isDown) return;
+    e.preventDefault();
+    var x = e.pageX - el.offsetLeft;
+    el.scrollLeft = scrollLeft - (x - startX);
+  });
 })();
 </script>
 </body>
