@@ -123,6 +123,27 @@
     .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1a1a1a; color: #fff; padding: 10px 20px; border-radius: 8px; font-size: 13px; z-index: 300; opacity: 0; transition: opacity .25s; pointer-events: none; }
     .toast.show { opacity: 1; }
 
+    /* SEARCH + EXPORT */
+    .toolbar { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
+    .search-wrap { flex: 1; min-width: 180px; position: relative; }
+    .search-wrap input { width: 100%; padding: 8px 12px 8px 34px; border: 1px solid var(--border); border-radius: 7px; font-size: 13px; outline: none; background: var(--surface); color: var(--text); transition: border-color .15s; }
+    .search-wrap input:focus { border-color: var(--purple); }
+    .search-wrap .ico { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 14px; pointer-events: none; }
+    .btn-export { padding: 8px 14px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 13px; cursor: pointer; white-space: nowrap; }
+    .btn-export:hover { background: var(--bg); }
+    .btn-export.csv { border-color: var(--green); color: var(--green); }
+    .btn-export.pdf { border-color: var(--purple); color: var(--purple); }
+
+    /* SEARCH RESULTS */
+    .search-results { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 14px; margin-bottom: 14px; display: none; }
+    .search-results h4 { font-size: 13px; font-weight: 600; margin-bottom: 10px; color: var(--text); }
+    .sr-item { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .sr-item:last-child { border-bottom: none; }
+    .sr-date { color: var(--muted); font-size: 12px; }
+    .sr-time { font-weight: 500; }
+    .sr-name { color: var(--purple); }
+    .sr-empty { font-size: 13px; color: var(--muted); text-align: center; padding: 10px 0; }
+
     /* MOBILE SCROLL */
     .grid-wrap {
       overflow-x: auto;
@@ -191,6 +212,15 @@
     <div class="stat"><div class="stat-n" id="s2">–</div><div class="stat-l">Al completo</div></div>
     <div class="stat"><div class="stat-n" id="s3">–</div><div class="stat-l">Mie prenotazioni</div></div>
   </div>
+  <div class="toolbar">
+    <div class="search-wrap">
+      <span class="ico">🔍</span>
+      <input type="text" id="search-inp" placeholder="Cerca iscritto…" oninput="doSearch()" autocomplete="off"/>
+    </div>
+    <button class="btn-export csv" onclick="exportCSV()">⬇ CSV</button>
+    <button class="btn-export pdf" onclick="exportPDF()">⬇ PDF</button>
+  </div>
+  <div class="search-results" id="search-results"></div>
   <div class="cal-hdr">
     <button class="btn" onclick="changeWeek(-1)">← Prec</button>
     <h2 id="week-lbl"></h2>
@@ -400,6 +430,9 @@ async function renderWeek(){
     : {docs:[]};
   const data={};
   snap.docs.forEach(doc=>{ data[doc.id]=doc.data(); });
+  // Salva per export e ricerca
+  window._weekData = data;
+  window._weekDays = days;
 
   const grid=document.getElementById('grid');
   grid.innerHTML='';
@@ -544,6 +577,126 @@ async function doAction(){
 }
 
 function closeModal(){ document.getElementById('overlay').style.display='none'; selSlot=null; }
+
+/* ── RICERCA ─────────────────────────────────── */
+function doSearch(){
+  const q = document.getElementById('search-inp').value.trim().toLowerCase();
+  const box = document.getElementById('search-results');
+  if(!q){ box.style.display='none'; return; }
+
+  const data  = window._weekData || {};
+  const days  = window._weekDays || [];
+  const results = [];
+
+  days.forEach(d=>{
+    if(holiday(d)) return;
+    const sch=SCHEDULE.find(s=>s.day===d.getDay());
+    if(!sch) return;
+    sch.times.forEach(t=>{
+      const k=sid(d,t);
+      const entry=data[k]||{attendees:[]};
+      const att=entry.attendees||[];
+      att.forEach(a=>{
+        if(a.nome && a.nome.toLowerCase().includes(q)){
+          results.push({date:d, t, nome:a.nome});
+        }
+      });
+    });
+  });
+
+  box.style.display='block';
+  if(!results.length){
+    box.innerHTML=`<h4>Risultati per "${q}"</h4><div class="sr-empty">Nessuna prenotazione trovata questa settimana.</div>`;
+    return;
+  }
+  box.innerHTML=`<h4>${results.length} prenotazion${results.length===1?'e':'i'} trovate per "${q}"</h4>`
+    + results.map(r=>
+      `<div class="sr-item">
+        <span class="sr-name">👤 ${r.nome}</span>
+        <span class="sr-time">${r.t}–${tEnd(r.t)}</span>
+        <span class="sr-date">${DS[r.date.getDay()]} ${r.date.getDate()} ${MN[r.date.getMonth()]}</span>
+      </div>`
+    ).join('');
+}
+
+/* ── EXPORT CSV ──────────────────────────────── */
+function exportCSV(){
+  const data = window._weekData || {};
+  const days = window._weekDays || [];
+  const lbl  = document.getElementById('week-lbl').textContent;
+  let rows = [['Data','Giorno','Orario','Fine','Partecipante']];
+
+  days.forEach(d=>{
+    if(holiday(d)) return;
+    const sch=SCHEDULE.find(s=>s.day===d.getDay());
+    if(!sch) return;
+    sch.times.forEach(t=>{
+      const k=sid(d,t);
+      const att=(data[k]?.attendees||[]);
+      if(att.length===0){
+        rows.push([localDateStr(d), DS[d.getDay()], t, tEnd(t), '–']);
+      } else {
+        att.forEach(a=>rows.push([localDateStr(d), DS[d.getDay()], t, tEnd(t), a.nome||'–']));
+      }
+    });
+  });
+
+  const csv = rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('
+');
+  const blob = new Blob(['﻿'+csv], {type:'text/csv;charset=utf-8'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href=url; a.download='prenotazioni_'+lbl.replace(/\s/g,'_')+'.csv';
+  a.click(); URL.revokeObjectURL(url);
+  toast('CSV esportato!');
+}
+
+/* ── EXPORT PDF ──────────────────────────────── */
+function exportPDF(){
+  const data = window._weekData || {};
+  const days = window._weekDays || [];
+  const lbl  = document.getElementById('week-lbl').textContent;
+
+  let rows = '';
+  days.forEach(d=>{
+    if(holiday(d)) return;
+    const sch=SCHEDULE.find(s=>s.day===d.getDay());
+    if(!sch) return;
+    sch.times.forEach(t=>{
+      const k=sid(d,t);
+      const att=(data[k]?.attendees||[]);
+      const nomi = att.length ? att.map(a=>a.nome||'–').join(', ') : '–';
+      const bgColor = att.length>=MAX ? '#FAECE7' : att.length>0 ? '#EEEDFE' : '#E1F5EE';
+      rows += `<tr style="background:${bgColor}">
+        <td>${DS[d.getDay()]} ${d.getDate()} ${MN[d.getMonth()]}</td>
+        <td>${t} – ${tEnd(t)}</td>
+        <td>${att.length}/${MAX}</td>
+        <td>${nomi}</td>
+      </tr>`;
+    });
+  });
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Prenotazioni ${lbl}</title>
+  <style>
+    body{font-family:sans-serif;padding:20px;color:#1a1a1a}
+    h2{margin-bottom:4px}p{color:#888;font-size:13px;margin-bottom:16px}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th{background:#534AB7;color:#fff;padding:8px 10px;text-align:left}
+    td{padding:7px 10px;border-bottom:1px solid #eee}
+  </style></head><body>
+  <h2>🧘 Pilates – Prenotazioni</h2>
+  <p>${lbl}</p>
+  <table><thead><tr><th>Giorno</th><th>Orario</th><th>Posti</th><th>Partecipanti</th></tr></thead>
+  <tbody>${rows}</tbody></table>
+  </body></html>`;
+
+  const w = window.open('','_blank');
+  w.document.write(html);
+  w.document.close();
+  setTimeout(()=>{ w.print(); }, 400);
+  toast('PDF pronto per la stampa!');
+}
 
 /* ── DRAG SCROLL su grid-wrap ────────────────── */
 (function(){
