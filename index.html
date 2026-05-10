@@ -98,7 +98,7 @@
     .pill:hover { opacity: .8; }
     .pill.free { background: var(--greenlt); color: #085041; }
     .pill.full { background: var(--redlt); color: #712B13; }
-    .pill.mine { background: var(--purplelt); color: #3C3489; }
+    .pill.mine { background: var(--greenlt); color: #085041; }
     .pill-t { font-weight: 600; white-space: nowrap; }
     .pill-c { font-size: 9px; opacity: .75; }
 
@@ -208,7 +208,7 @@
   </div>
   <div class="legend">
     <div class="leg"><div class="leg-dot" style="background:#E1F5EE;border:1px solid #5DCAA5"></div>Disponibile</div>
-    <div class="leg"><div class="leg-dot" style="background:#EEEDFE;border:1px solid #AFA9EC"></div>Prenotata da me</div>
+
     <div class="leg"><div class="leg-dot" style="background:#FAECE7;border:1px solid #F0997B"></div>Completa</div>
     <div class="leg"><div class="leg-dot" style="background:#FCEBEB;border:1px solid #F7C1C1"></div>Festivo</div>
   </div>
@@ -504,7 +504,7 @@ function renderWeek() {
             if (isMine) mine++;
             (function(dd, tt, kk, ee) {
               var pill = document.createElement('div');
-              pill.className = 'pill ' + (isMine ? 'mine' : isFull ? 'full' : 'free');
+              pill.className = 'pill ' + (isFull ? 'full' : 'free');
               pill.innerHTML = '<div class="pill-t">' + tt + '-' + tEnd(tt) + '</div><div class="pill-c">' + att.length + '/' + MAX + '</div>';
               pill.onclick = function() { openModal(dd, tt, kk, ee); };
               cell.appendChild(pill);
