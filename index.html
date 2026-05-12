@@ -97,6 +97,7 @@
     .pill { border-radius: 5px; padding: 4px 6px; font-size: 10px; cursor: pointer; margin-bottom: 2px; transition: opacity .15s; }
     .pill:hover { opacity: .8; }
     .pill.free { background: var(--greenlt); color: #085041; }
+    .pill.partial { background: #FEF3E2; color: #7A4510; }
     .pill.full { background: var(--redlt); color: #712B13; }
     .pill.mine { background: var(--greenlt); color: #085041; }
     .pill-t { font-weight: 600; white-space: nowrap; }
@@ -515,12 +516,25 @@ function renderWeek() {
     results[0].docs.forEach(function(doc) { data[doc.id] = doc.data(); });
     results[1].docs.forEach(function(doc) {
       var d2 = doc.data();
-      // Filtra solo lezioni private della settimana corrente
       if (d2.date && d2.date >= startStr && d2.date <= endStr) {
         data[doc.id] = d2;
       }
     });
     weekData = data;
+
+    // Unisci orari normali + privati e ordina
+    var privateTimes = [];
+    Object.keys(data).forEach(function(k) {
+      var e = data[k];
+      if (e.private && e.time && privateTimes.indexOf(e.time) < 0) {
+        privateTimes.push(e.time);
+      }
+    });
+    var mergedTimes = allTimes.slice();
+    privateTimes.forEach(function(t) {
+      if (mergedTimes.indexOf(t) < 0) mergedTimes.push(t);
+    });
+    mergedTimes.sort();
 
     var grid = document.getElementById('grid');
     grid.innerHTML = '';
@@ -543,7 +557,7 @@ function renderWeek() {
 
     var tot=0, free=0, full=0, mine=0;
 
-    allTimes.forEach(function(t) {
+    mergedTimes.forEach(function(t) {
       var tl = document.createElement('div');
       tl.className = 'tcol';
       tl.textContent = t;
@@ -553,19 +567,28 @@ function renderWeek() {
         var cell = document.createElement('div');
         var h = getHoliday(d);
         var sch = SCHEDULE.find(function(s) { return s.day === d.getDay(); });
-        var has = sch && sch.times.indexOf(t) >= 0;
+        var hasNormal = sch && sch.times.indexOf(t) >= 0;
+
+        // Cerca lezione privata per questo giorno+orario
+        var privKey = null;
+        var privEntry = null;
+        Object.keys(data).forEach(function(k) {
+          var e = data[k];
+          if (e.private && e.time === t && e.date === localStr(d)) {
+            privKey = k; privEntry = e;
+          }
+        });
 
         if (h) {
           cell.className = 'cell hol';
-          if (has) {
+          if (hasNormal) {
             var x = document.createElement('div');
-            x.className = 'closed';
-            x.textContent = 'chiuso';
+            x.className = 'closed'; x.textContent = 'chiuso';
             cell.appendChild(x);
           }
         } else {
           cell.className = 'cell';
-          if (has) {
+          if (hasNormal) {
             var k = sid(d, t);
             var entry = data[k] || { attendees: [] };
             var att = entry.attendees || [];
@@ -575,70 +598,30 @@ function renderWeek() {
             if (isFull) full++; else free += (MAX - att.length);
             if (isMine) mine++;
             (function(dd, tt, kk, ee) {
+              var attLen = (ee.attendees || []).length;
               var pill = document.createElement('div');
-              pill.className = 'pill ' + (isFull ? 'full' : 'free');
-              pill.innerHTML = '<div class="pill-t">' + tt + '-' + tEnd(tt) + '</div><div class="pill-c">' + att.length + '/' + MAX + '</div>';
+              pill.className = 'pill ' + (isFull ? 'full' : attLen > 0 ? 'partial' : 'free');
+              pill.innerHTML = '<div class="pill-t">' + tt + '-' + tEnd(tt) + '</div><div class="pill-c">' + attLen + '/' + MAX + '</div>';
               pill.onclick = function() { openModal(dd, tt, kk, ee); };
               cell.appendChild(pill);
             })(d, t, k, entry);
           }
+          if (privKey) {
+            var pAtt = privEntry.attendees || [];
+            var pMax = privEntry.maxSpots || 1;
+            (function(dd, tt, kk, ee, ms, ds) {
+              var pill2 = document.createElement('div');
+              pill2.className = 'pill private';
+              pill2.innerHTML = '<div class="pill-t">' + tt + '-' + tEnd(tt) +
+                ' <span class="private-badge">PRV</span></div>' +
+                '<div class="pill-c">' + ee.length + '/' + ms + '</div>';
+              pill2.onclick = function() { openModal(dd, tt, kk, { attendees: ee, maxSpots: ms, private: true, time: tt, date: ds }); };
+              cell.appendChild(pill2);
+            })(d, t, privKey, pAtt, pMax, localStr(d));
+          }
         }
         grid.appendChild(cell);
       });
-    });
-
-    // Inietta lezioni private nelle celle
-    Object.keys(data).forEach(function(k) {
-      var entry = data[k];
-      if (!entry.private) return;
-      var dateStr = entry.date;
-      var t2 = entry.time;
-      if (!dateStr || !t2) return;
-      var maxSp = entry.maxSpots || 1;
-      var att2 = entry.attendees || [];
-
-      // Trova indice colonna
-      var colIdx = -1;
-      days.forEach(function(d, i) { if (localStr(d) === dateStr) colIdx = i; });
-      if (colIdx < 0) return;
-
-      // Cerca la riga con quell'orario tra quelle esistenti
-      // Ogni riga ha: tcol + 7 celle. Cerca una tcol con testo == t2
-      var grid2 = document.getElementById('grid');
-      var tCols = grid2.querySelectorAll('.tcol');
-      var targetCell = null;
-      tCols.forEach(function(tc) {
-        if (tc.textContent.trim() === t2) {
-          // La cella corrispondente al giorno è il (colIdx+1)-esimo fratello
-          var next = tc;
-          for (var ci = 0; ci <= colIdx; ci++) { next = next.nextElementSibling; }
-          targetCell = next;
-        }
-      });
-
-      // Se non esiste la riga, aggiungi in fondo una riga extra
-      if (!targetCell) {
-        var newRow = [];
-        var tl2 = document.createElement('div');
-        tl2.className = 'tcol'; tl2.textContent = t2;
-        grid2.appendChild(tl2);
-        days.forEach(function(d2, ci) {
-          var c2 = document.createElement('div'); c2.className = 'cell';
-          if (ci === colIdx) targetCell = c2;
-          grid2.appendChild(c2);
-        });
-      }
-
-      if (!targetCell) return;
-      (function(dd, tt, kk, ee, ms) {
-        var pill2 = document.createElement('div');
-        pill2.className = 'pill private';
-        pill2.innerHTML = '<div class="pill-t">' + tt + '-' + tEnd(tt) +
-          ' <span class="private-badge">PRV</span></div>' +
-          '<div class="pill-c">' + ee.length + '/' + ms + '</div>';
-        pill2.onclick = function() { openModal(days[colIdx], tt, kk, { attendees: ee, maxSpots: ms, private: true, time: tt, date: dateStr }); };
-        targetCell.appendChild(pill2);
-      })(days[colIdx], t2, k, att2, maxSp);
     });
 
     document.getElementById('s0').textContent = tot;
